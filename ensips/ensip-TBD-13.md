@@ -11,7 +11,9 @@ created: 2024-06-07 (originally proposed in ENSIP-TBD-2)
 
 This ENSIP introduces a new multicodec type, `data-url`, for ENS records. This codec allows ENS names to resolve to content embedded directly in a Data URL format. A corresponding multicodec proposal has been submitted to the multiformats/multicodec repository.
 
-Data URLs are particularly useful for storing multimodal data for AI applications. Because Data URLs are self-descriptive, it's possible for example for LLMs to interpret the data without first needing to know the data type. ENSIP-TBD-9 defines how an unlimited number of arbitrary `bytes` type records can be stored with a single ENS name. ENSIP-TBD-11 specifies a `root-context` text record that can be used as the entry point for AI applications using ENS. Using the `root-context` as the starting point, it is possible to define an unlimited number of Data URL resources that can be used in the context of prompts, tools, or resources — for example, for use with chatbot interfaces, agents, and MCP servers.
+Data URLs provide a standardized way to embed small files and data directly within ENS records, eliminating the need for external hosting. This approach is particularly valuable for storing multimodal data, configuration files, schemas, and other content that benefits from being directly accessible through ENS resolution.
+
+Because Data URLs are self-descriptive with embedded MIME types, they enable applications to interpret and handle the data appropriately without requiring prior knowledge of the content type. This makes them especially useful for AI applications, where they can store prompts, model configurations, training data, or other resources that can be dynamically accessed and processed. 
 
 # Specification
 
