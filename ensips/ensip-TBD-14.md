@@ -26,11 +26,43 @@ This ENSIP allows for the `root-context` text to gain the necessary context to i
 
 ## Links to Text Records
 
-It is possible to link to other text records from the `root-context` text record, allowing for data to be updated independently from the main `root-context` manifest. Other text records of the same ENS name MUST be specified using `text-record-key` and `text-record-description` pairs. The `text-record-key` is a unique identifier key for the text record, and the `text-record-description` is a human-readable description of the text record, which can be used to provide context for the data of the text record and instruct clients how to use the data.
+It is possible to link to text records from the `root-context` text record using the `enstr` URI scheme, allowing for data to be updated independently from the main `root-context` manifest. Text records can be referenced in several ways:
+
+### Raw URI Format
+
+Text records can be referenced directly using the `enstr` URI:
 
 ```
-text-record-key: eth-price
-text-record-description: The current price of Ethereum in USD from the Chainlink Oracle on L1 Ethereum, with 6 decimals of precision and no decimals characters (1000000 = $1.00).
+enstr:price-oracle.eth:eth-price
+```
+
+### JSON Format with Metadata
+
+For more complex references that require additional context, text records can be wrapped in JSON format:
+
+```json
+{
+  "text-record": "enstr:price-oracle.eth:eth-price",
+  "description": "The current price of Ethereum in USD from the Chainlink Oracle on L1 Ethereum, with 6 decimals of precision and no decimal characters (1000000 = $1.00)."
+}
+```
+
+### Markdown Link Format
+
+Text records can also be embedded as Markdown links where the link text serves as the description:
+
+```markdown
+[Current ETH price from Chainlink Oracle with 6 decimals precision](enstr:price-oracle.eth:eth-price)
+```
+
+### Cross-ENS References
+
+The `enstr` URI scheme allows referencing text records from different ENS names, enabling modular data composition:
+
+```
+enstr:token.eth:pepe-address
+enstr:governance.eth:dao-mission
+enstr:api.eth:endpoint-url
 ```
 
 ## Head Matter
