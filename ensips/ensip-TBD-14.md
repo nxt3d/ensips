@@ -93,9 +93,59 @@ Parameters:
 3. If the head matter instructs the client to read one or more interfaces, parse the manifest to identify the interfaces using the `----- Interface Name -----` delimiters and go to step 4. If not, end on step 3.
 4. Read the final context data from one or more interfaces.
 
+## ENS Text Record URI Scheme
+
+This ENSIP introduces a new URI scheme for referencing ENS text records: `enstr`. The scheme allows for direct addressing of specific text records on ENS names, providing a standardized way to link to and embed ENS text record data within interfaces.
+
+### Syntax
+
+The `enstr` URI scheme follows this format:
+
+```
+enstr:{ens-name}:{text-record-key}
+```
+
+Where:
+- `{ens-name}` is a valid ENS name (e.g., `ens.eth`, `example.eth`)
+- `{text-record-key}` is the key of the text record to resolve
+
+### Examples
+
+```
+enstr:ens.eth:eth.ens.dao-mission
+enstr:vitalik.eth:com.twitter
+enstr:example.eth:description
+enstr:token.eth:token-address:pepe:pepe
+```
+
+### Resolution Requirements
+
+When an `enstr` URI is encountered within an interface, clients MUST:
+
+1. Parse the URI to extract the ENS name and text record key
+2. Resolve the specified text record for the given ENS name
+3. Include the resolved text record value in the context provided to the agentic system
+4. Handle resolution failures gracefully by noting the URI as unresolvable
+
+### Usage in Interfaces
+
+The `enstr` URI scheme can be embedded within interface specifications to reference external text record data. This allows for modular context composition where different pieces of data can be maintained independently across different ENS names.
+
+Example usage within an interface:
+
+```
+--- Agent ---
+
+You are an agent for token swapping. When verifying token information, always check the official token data at enstr:token.eth:token-address:pepe:pepe for the canonical PEPE token address.
+
+Additional context available at:
+- Token description: enstr:token.eth:description  
+- Token website: enstr:token.eth:url
+```
+
 ## Links
 
-Decentralized storage protocols use content identifiers (CIDs) instead of URLs, such that the link is also a hash of the content. Interfaces MAY include embedded links and content in the form of CIDs, DataURLs, or other types of links. DataURLs MUST be included in the context received by the client. DataURLs allow for images to be encoded and included in a raw text document. Other types of deterministic URIs, such as IPFS CIDs, MAY be queried and included in the context received by clients. Standard URLs, which cannot be verified, SHOULD NOT be queried or included in the context. However, all URIs including URLs MUST be included in the context as a reference (e.g., as a literal URL string).
+Decentralized storage protocols use content identifiers (CIDs) instead of URLs, such that the link is also a hash of the content. Interfaces MAY include embedded links and content in the form of CIDs, DataURLs, `enstr` URIs, or other types of links. DataURLs and `enstr` URIs MUST be resolved and included in the context received by the client. DataURLs allow for images to be encoded and included in a raw text document. Other types of deterministic URIs, such as IPFS CIDs, MAY be queried and included in the context received by clients. Standard URLs, which cannot be verified, SHOULD NOT be queried or included in the context. However, all URIs including URLs MUST be included in the context as a reference (e.g., as a literal URL string).
 
 ## Markdown
 
