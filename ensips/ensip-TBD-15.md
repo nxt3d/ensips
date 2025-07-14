@@ -8,7 +8,7 @@ created: 2025-06-03
 
 ## Abstract
 
-This ENSIP defines two complementary **patterned text records** that establish a parent ↔ delegate relationship between **ENS names** (not addresses):
+This ENSIP defines two complementary **text records** that establish a parent ↔ delegate relationship between **ENS names** (not addresses):
 
 * **`agent-delegate:<ENS name>`** — asserted on the *parent* (owner) ENS name to nominate one or more delegate agents.
 * **`agent-parent:<ENS name>`** — asserted on the *delegate* ENS name to acknowledge a specific parent.
