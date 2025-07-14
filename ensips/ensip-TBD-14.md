@@ -12,7 +12,7 @@ ENSIPXX introduces the `root-context` text record, which provides a universal en
 
 ## Motivation
 
-Agentic systems that require verifiable context data are emerging, including agents that can propose blockchain transactions with calldata, or that rely on critical context data requiring verifiability. ENS names are well positioned to register verifiable context data because they can be stored onchain and are supported by existing tooling. ENSIPXX introduced the `root-context` text record as a starting point for agentic context data but did not define any format standards. This ENSIP introduces a standard way to discover interfaces and interface implementations for storing verifiable AI context. Using this standard, agentic systems can be developed using any type of interface, while allowing apps to ignore interfaces they do not require.
+Agentic systems that require verifiable context data are emerging, including agents that can propose blockchain transactions with calldata, or that rely on critical context data requiring verifiability. ENS names are well positioned to register verifiable context data because they can be stored onchain and are supported by existing tooling. ENSIPXX introduced the `root-context` text record as a starting point for agentic context data but did not define any format standards for the format of the data. This ENSIP introduces a standard way to discover interfaces and interface implementations for storing verifiable AI context. Using this standard, agentic systems can be developed using any type of interface, while allowing apps to ignore interfaces they do not require.
 
 ## Specification
 
