@@ -33,8 +33,8 @@ Where:
 Using ensip-TBD-16, it is possible to display text records as fully deterministic URIs using the `enstr` URI scheme. 
 
 ```
-enstr:data.eth:com.chainlink.eth.price:20250718      # Price at a specific date
-enstr:data.eth:com.chainlink.eth.price:block:20000000 # Price at a specific block
+enstr:data.eth:com.chainlink.ether.price:20250718      # Price at a specific date
+enstr:data.eth:com.chainlink.ether.price:block:20000000 # Price at a specific block
 enstr:api.eth:com.example.users:alice               # Data for user 'alice'
 enstr:api.eth:com.example.groups:public:2025        # Public group data for year 2025
 ```
