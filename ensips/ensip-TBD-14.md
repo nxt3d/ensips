@@ -26,15 +26,9 @@ This ENSIP allows for the `root-context` text to gain the necessary context to i
 
 ## Links to Text Records
 
-It is possible to link to text records from the `root-context` text record using the `enstr` URI scheme, allowing for data to be updated independently from the main `root-context` manifest. Text records can be referenced in several ways:
+It is possible to link to text records from the `root-context` text record using Service Key Parameters as defined in [ENSIP-TBD-17](./ensip-TBD-17.md). This allows for data to be updated independently from the main `root-context` manifest and supports dynamic, contextual references.
 
-### Raw URI Format
-
-Text records can be referenced directly using the `enstr` URI:
-
-```
-enstr:price-oracle.eth:eth-price
-```
+Text records can be referenced in several ways:
 
 ### JSON Format with Metadata
 
@@ -43,7 +37,7 @@ For more complex references that require additional context, text records can be
 ```json
 {
   "text-record": "enstr:price-oracle.eth:eth-price",
-  "description": "The current price of Ethereum in USD from the Chainlink Oracle on L1 Ethereum, with 6 decimals of precision and no decimal characters (1000000 = $1.00)."
+  "description": "The current price of Ethereum in USD from an onchain oracle on L1 Ethereum, with 6 decimals of precision and no decimal characters (1000000 = $1.00)."
 }
 ```
 
@@ -52,17 +46,16 @@ For more complex references that require additional context, text records can be
 Text records can also be embedded as Markdown links where the link text serves as the description:
 
 ```markdown
-[Current ETH price from Chainlink Oracle with 6 decimals precision](enstr:price-oracle.eth:eth-price)
+[Current ETH price from an onchain oracle with 6 decimals precision](enstr:price-oracle.eth:eth-price)
 ```
 
-### Cross-ENS References
+### Service Key Parameters
 
-The `enstr` URI scheme allows referencing text records from different ENS names, enabling modular data composition:
+Using Service Key Parameters (see ENSIP-TBD-17), it is possible to reference text records with contextual parameters, such as timestamps or block numbers:
 
 ```
-enstr:token.eth:pepe-address
-enstr:governance.eth:dao-mission
-enstr:api.eth:endpoint-url
+enstr:data.eth:com.chainlink.eth.price:20250718      # Request ETH price for July 18, 2025
+enstr:data.eth:com.chainlink.eth.price:block:20000000 # Request ETH price for block 20,000,000
 ```
 
 ## Head Matter
