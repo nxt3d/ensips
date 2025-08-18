@@ -1,7 +1,6 @@
 ---
-
 title: ENS Record URI Scheme (ensr:)
-author: Prem Makeig (premm.eth) [premm@unruggable.com](mailto:premm@unruggable.com)
+author: Prem Makeig (premm.eth) <premm@unruggable.com>
 discussions-to: 
 status: Idea
 created: 2025-08-18
