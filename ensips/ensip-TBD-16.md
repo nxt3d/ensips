@@ -1,7 +1,7 @@
 ---
 title: ENS Record URI Scheme
 author: Prem Makeig (premm.eth) <premm@unruggable.com>
-discussions-to: 
+discussions-to: <URL>
 status: Idea
 created: 2025-08-18
 ---
