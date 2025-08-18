@@ -1,88 +1,116 @@
 ---
-title: ENS Text Record URI Scheme
-author: Prem Makeig (premm.eth) <premm@unruggable.com>
-discussions-to: <URL>
+
+title: ENS Record URI Scheme (ensr:)
+author: Prem Makeig (premm.eth) [premm@unruggable.com](mailto:premm@unruggable.com)
+discussions-to: 
 status: Idea
-created: 2025-07-18
+created: 2025-08-18
 ---
 
 ## Abstract
 
-This ENSIP introduces the `enstr` URI scheme for referencing ENS text records. The scheme provides a standardized way to address and embed ENS text record data, enabling modular, interoperable context composition for agentic systems and other ENS-integrated applications.
+This ENSIP defines the `ensr:` URI scheme for addressing ENS records. It enables portable, unambiguous references to ENS records, including text records, addresses by coin type, and contenthash.
 
 ## Motivation
 
-ENS text records are key-value pairs associated with ENS names, but there is currently no standard URI format for referencing them. The `enstr` URI scheme enables direct, verifiable linking to specific text records, supporting richer context and cross-ENS data composition for wallets, agents, dApps, and middleware.
+ENS names are widely used as human-readable identifiers, but clients lack a standard way to deep-link specific ENS records. `ensr:` makes records addressable in URIs so clients can point to the same data without ad hoc conventions. Default resolution is context specific and can vary by client; when deterministic behavior is required, use explicit queries such as `?text=`, `?addr=`, or `?contenthash`.
 
 ## Specification
 
-### Syntax
+### Summary
 
-The `enstr` URI scheme follows this format:
+* Scheme: `ensr:`
+* Authority: none
+* Path: ENS name
+* Queries:
+
+  * `?text=<key>` to fetch a text record
+  * `?addr[=<coinType>]` to fetch an address record; if `coinType` is omitted use 60 (ETH) as defined by ENSIP-11
+  * `?contenthash` to fetch the contenthash explicitly
+* Default when no query is given: resolution is context specific. In browser contexts clients often choose `contenthash`. In other contexts a designated text record may be preferred. Use explicit queries to avoid ambiguity.
+
+### ABNF
+
+ABNF follows RFC 3986 and RFC 5234; `unreserved` and `pct-encoded` are as defined in RFC 3986.
 
 ```
-enstr:{ens-name}:{text-record-key}
+ensr-URI = "ensr:" ens-name [ "?" query ]
+
+; ENS name (ASCII labels only) ; May be revisited in a future revision to include emoji and internationalized label support
+ens-name = label ( "." label )
+label = 1( ALPHA / DIGIT / "-" )
+
+; Query: exactly one selector is allowed
+query = addr-param / text-param / content-param
+
+addr-param = "addr" [ "=" coin-type ]
+coin-type = 1*DIGIT ; ENSIP-11 coin type (e.g., 60 for ETH)
+
+text-param = "text=" text-key
+text-key = 1*( unreserved / pct-encoded / ":" )
+; ":" allowed for Service Key parameters (see related ENSIP)
+
+content-param = "contenthash"
+
+param = param-key "=" param-val
+param-key = 1*( unreserved )
+param-val = *( unreserved / pct-encoded )
+
 ```
 
-Where:
-- `{ens-name}` is a valid ENS name (e.g., `ens.eth`, `example.eth`)
-- `{text-record-key}` is the key of the text record to resolve
+### Resolution Semantics
+
+1. Parse `ensr:` per ABNF.
+2. Resolve `ens-name` via the ENS protocol.
+3. If `?text=` is present, return the value for that text key.
+4. If `?addr` is present with `=<coinType>`, return the corresponding address for that coin type. If `?addr` is present without a value, return the address for coin type 60 (ETH).
+5. If `?contenthash` is present, return the contenthash value as defined by ENSIP-7.
+6. If no query is present, resolution is context specific. Browser contexts commonly resolve to `contenthash`. Other contexts may select a designated text record. Use explicit queries to avoid ambiguity.
+
+### Result Representation
+
+This ENSIP defines identifiers, not transport. Implementations SHOULD return the raw record value directly, without mandatory JSON wrapping:
+
+* Text records: return the UTF‑8 string exactly as stored. If the stored value happens to be JSON, clients will receive the JSON text unmodified.
+* Address records: return the raw sequence, which may be context specific. In HTTP contexts this MAY be encoded as `application/octet-stream`. If text encoding is required, use `0x`‑prefixed hex.
+* Contenthash: return the raw sequence, which may be context specific. In HTTP contexts this MAY be encoded as `application/octet-stream`. If text encoding is required, use `0x`‑prefixed hex. 
+
+No additional envelope or metadata is included at the URI resolution layer. Metadata such as coin type, encoding hints, or error codes SHOULD be conveyed by the transport protocol (e.g., HTTP headers or JSON‑RPC error objects) rather than by wrapping the value.
 
 ### Examples
 
 ```
-enstr:ens.eth:eth.ens.dao-mission
-enstr:vitalik.eth:com.twitter
-enstr:example.eth:description
-enstr:token.eth:token-address:pepe
+ensr:neo.eth?text=eth.delegations:ens
+ensr:neo.eth?text=com.twitter
+ensr:neo.eth?text=root-context
+
+ensr:neo.eth?addr ; returns coin type 60 (ETH)
+ensr:neo.eth?addr=60 ; ETH explicitly
+ensr:neo.eth?addr=0 ; BTC if supported by resolver
+
+ensr:neo.eth?contenthash ; explicit website/content pointer
+ensr:docs.eth ; context-specific default (not deterministic)
 ```
 
-### Usage Formats
+### Rationale
 
-#### Raw URI Format
+Clients already read ENS records, but linking to them lacks a simple, uniform URI standard. Using `?text`, `?addr`, and `?contenthash` makes record specific resolution explicit and sharable in plain text contexts.
 
-Text records can be referenced directly using the `enstr` URI:
+### Backwards Compatibility
 
-```
-enstr:price-oracle.eth:eth-price
-```
+Software that does not recognize `ensr:` will ignore these URIs. Existing ENS resolution behavior is unaffected.
 
-#### JSON Format with Metadata
+### Security Considerations
 
-Text records can be wrapped in JSON for additional context:
+None.
 
-```json
-{
-  "text-record": "enstr:price-oracle.eth:eth-price",
-  "description": "The current price of Ethereum in USD from the Chainlink Oracle on L1 Ethereum, with 6 decimals of precision and no decimal characters (1000000 = $1.00)."
-}
-```
+### Future Work
 
-#### Markdown Link Format
+This revision restricts labels to ASCII. Internationalized labels, including emoji via punycode, may be specified in a future update. Additional convenience queries or content negotiation could be considered once real-world usage informs the design.
 
-Text records can be embedded as Markdown links:
+### References
 
-```markdown
-[Current ETH price from Chainlink Oracle with 6 decimals precision](enstr:price-oracle.eth:eth-price)
-```
-
-#### Service Key Parameters
-
-For contextual and dynamic references, Service Key Parameters (see [ENSIP-TBD-17](./ensip-TBD-17.md)) can be used to append parameters such as timestamps, block numbers, or other identifiers to the text record key:
-
-```
-enstr:data.eth:com.chainlink.ether.price:20250718      # Request ETH price for July 18, 2025
-enstr:data.eth:com.chainlink.ether.price:block:20000000 # Request ETH price for block 20,000,000
-```
-
-## Rationale
-
-A standardized URI scheme for ENS text records enables composable, machine-readable context for agentic systems, dApps, and other ENS-integrated tools. It supports modularity, discoverability, and interoperability across the ENS ecosystem.
-
-## Backwards Compatibility
-
-Unaware clients will simply ignore the new URI scheme. Existing behavior is unaffected.
-
-## Copyright
-
-Copyright and related rights waived via [CC0](https://creativecommons.org/publicdomain/zero/1.0/).
+* RFC 3986: Uniform Resource Identifier (URI): Generic Syntax
+* RFC 5234: Augmented BNF for Syntax Specifications
+* ENSIP-11: Coin Type Definitions for ENS Address Resolution
+* ENSIP-7: Contenthash for ENS
