@@ -1,5 +1,5 @@
 ---
-title: ENS Record URI Scheme (ensr:)
+title: ENS Record URI Scheme
 author: Prem Makeig (premm.eth) <premm@unruggable.com>
 discussions-to: 
 status: Idea
