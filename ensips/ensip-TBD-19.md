@@ -11,10 +11,10 @@ created: 2025-09-25
 This ENSIP proposes a new dedicated record type for storing arbitrary data in ENS names. This proposal introduces a purpose-built interface with the following function:
 
 ```
-function data(bytes32 node, bytes calldata key) external view returns (bytes memory);
+function data(bytes32 node, string calldata key) external view returns (bytes memory);
 ```
 
-This dedicated approach provides a clean separation of concerns, avoiding conflicts with existing record types while offering a more intuitive interface for arbitrary data storage. The `key` parameter accepts arbitrary bytes, allowing for flexible key generation strategies including string-based keys, hashed keys, or structured binary keys.
+This dedicated approach provides a clean separation of concerns, avoiding conflicts with existing record types while offering a more intuitive interface for arbitrary data storage. The `key` parameter accepts string keys, providing a simple and developer-friendly interface for data storage.
 
 ## Motivation
 
@@ -22,7 +22,7 @@ ENS currently has a single dedicated record for storing multimedia content, the 
 
 While ENS does support `text` records ([ENSIP-5](#)), these are intended for human-readable text data and are limited to key-value string pairs. Address records support bytes, but using address records for arbitrary data might cause conflicts, and generally be confusing for developers.
 
-By introducing a dedicated `data` record type, developers can store arbitrary key-value pairs without interfering with existing ENS functionality. For instance, a key like `bytes("aiContext")` could be used to store context data as part of an AI agent, as pre-context for LLM prompts.
+By introducing a dedicated `data` record type, developers can store arbitrary key-value pairs without interfering with existing ENS functionality. For instance, a key like `"agent-context"` could be used to store context data as part of an AI agent, as pre-context for LLM prompts.
 
 ## Specification
 
@@ -33,18 +33,15 @@ The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "S
 This ENSIP introduces a new record type for storing arbitrary data with the following interface:
 
 ```
-data(bytes32 node, bytes calldata key) external view returns (bytes memory);
+data(bytes32 node, string calldata key) external view returns (bytes memory);
 ```
 
-The `key` parameter accepts arbitrary bytes, allowing for various key generation strategies:
-- String-based keys: `bytes("aiContext")`
-- Hashed keys: `abi.encodePacked(keccak256(bytes("aiContext")))`
-- Structured binary keys: Custom encoding schemes
+The `key` parameter accepts string keys, providing a simple and intuitive interface for data storage.
 
 Resolvers implementing this ENSIP MUST emit the following event:
 
 ```
-event DataChanged(bytes32 node, bytes key, bytes data);
+event DataChanged(bytes32 node, string indexed indexedKey, string key, bytes data);
 ```
 
 ### Example
@@ -57,24 +54,21 @@ pragma solidity ^0.8.0;
 interface IDataResolver {
     event DataChanged(
         bytes32 indexed node,
-        bytes indexed key,
+        string indexed indexedKey,
+        string key,
         bytes data
     );
 
     function data(
         bytes32 node,
-        bytes calldata key
+        string calldata key
     ) external view returns (bytes memory);
 }
 
-interface Resolver is IDataResolver {
-    function data(bytes32 node, bytes calldata key) external view returns (bytes memory);
-}
-
 contract Resolver is IDataResolver {
-    mapping(bytes32 => mapping(bytes => bytes)) private dataStore;
+    mapping(bytes32 node => mapping(string key => bytes data)) private dataStore;
     
-    function data(bytes32 node, bytes calldata key) external view returns (bytes memory) {
+    function data(bytes32 node, string calldata key) external view returns (bytes memory) {
         return dataStore[node][key];
     }
     
@@ -87,24 +81,15 @@ Set and retrieve arbitrary data:
 // Pseudo javascript example
 
 // Store arbitrary data
-const tx = await resolver.setData(node, ethers.toUtf8Bytes("aiContext"), "0x0001ABCD...");
+const tx = await resolver.setData(node, "agent-context", "0x0001ABCD...");
 await tx.wait();
 
 // Retrieve arbitrary data
-const result = await resolver.data(node, ethers.toUtf8Bytes("aiContext"));
-
-// Store with hashed key
-const hashedKey = ethers.keccak256(ethers.toUtf8Bytes("aiContext"));
-const tx2 = await resolver.setData(node, hashedKey, "0x0001ABCD...");
-await tx2.wait();
-
-// Retrieve with hashed key
-const hashedKey2 = ethers.keccak256(ethers.toUtf8Bytes("aiContext"));
-const result2 = await resolver.data(node, hashedKey2);
+const result = await resolver.data(node, "agent-context");
 ```
 ### Rationale
 
-ENS names have become widely used as identifiers across various applications and protocols, with growing demand for storing additional metadata, context data, and arbitrary data that existing record types cannot easily or efficiently accommodate. This ENSIP introduces a dedicated `data` record type using bytes-to-bytes key-value pairs, providing maximum flexibility for key generation strategies and ensuring the record type can adapt to various use cases including hashes, metadata storage, and serialized data structures. This ENSIP intentionally leaves data encoding unspecified to accommodate future use cases.
+ENS names have become widely used as identifiers across various applications and protocols, with growing demand for storing additional metadata, context data, and arbitrary data that existing record types cannot easily or efficiently accommodate. This ENSIP introduces a dedicated `data` record type using string-to-bytes key-value pairs, providing a simple and intuitive interface for data storage while ensuring the record type can adapt to various use cases including metadata storage and serialized data structures. This ENSIP intentionally leaves data encoding unspecified to accommodate future use cases.
 
 ## Backwards Compatibility
 
