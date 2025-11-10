@@ -1,10 +1,13 @@
 ---
-ensip: TBD
 title: Data URL and URI Contenthash
-status: Idea
-type: ENSRC
-author: Prem Makeig (premm.eth) <premm@unruggable.com>, raffy.eth <raffy@unruggable.com>
-created: 2024-6-7
+description: Extends the contenthash field to support data URL and URI content types
+contributors: 
+    - premm.eth
+    - raffy.eth
+    - @RichardDwi
+ensip:
+  created: "2024-06-07"
+  status: Draft
 ---
 
 # Abstract 
