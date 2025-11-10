@@ -29,7 +29,7 @@ A pull request has been submitted to the [multiformats/multicodec repository](ht
 **Data URL**
 
 ```
-uvarint(codec2) + byte(length(MIME)) + &lt;MIME bytes as ASCII&gt; + &lt;DATA as bytes&gt;
+uvarint(codec2) + byte(length(MIME)) + MIME bytes as ASCII + DATA as bytes;
 ```
 
 - The MIME type must not exceed 255 bytes.
