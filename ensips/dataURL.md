@@ -4,7 +4,7 @@ description: Extends the contenthash field to support data URL and URI content t
 contributors: 
     - premm.eth
     - raffy.eth
-    - @RichardDwi
+    - "@RichardDwi"
 ensip:
   created: "2024-06-07"
   status: Draft
