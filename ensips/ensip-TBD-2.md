@@ -17,7 +17,7 @@ The `contenthash` field has become the standard for using ENS names for decentra
 
 # Specification
 
-ENSIP-7 introduced the `contenthash` field for resolving ENS names to content hosted on distributed systems such as IPFS and Swarm. The value returned by `contenthash` is represented as a machine-readable multicodec, which permits a wide range of protocols to be supported by ENS names. The format is specified as follows:
+[ENSIP-7](/7.md) introduced the `contenthash` field for resolving ENS names to content hosted on distributed systems such as IPFS and Swarm. The value returned by `contenthash` is represented as a machine-readable multicodec, which permits a wide range of protocols to be supported by ENS names. The format is specified as follows:
 
 ```
 <protoCode uvarint><value []byte>
@@ -25,7 +25,7 @@ ENSIP-7 introduced the `contenthash` field for resolving ENS names to content ho
 
 protoCodes and their meanings are specified in the [multiformats/multicodec](https://github.com/multiformats/multicodec) repository.
 
-This ENSIP intruduces two new types of new multicodecs, uri and eth-calldata (which will be used for the Data URL).  
+This ENSIP intruduces two new types of new multicodecs, uri and eth-calldata (which will be used for the referencing the location of the Data URL using Hooks).  
 
 Until final protoCodes are approved the "Private Use Area" temporary codes should be used.
 
@@ -40,27 +40,37 @@ Format: `uvarint(codec1) + <URI as utf8 bytes>`
 
 **Data URL**
 
-For Data URL we use ENSIP-TBD-6 Hooks, to direct clients to a smart contract with a specified contract address and coinType (chain id), to resolve the data for the Data URL. 
+For Data URL we use ENSIP-XX Hooks, to direct clients to a smart contract with a specified contract address and coinType (chain id), using ERC-7930 binary addresses, to resolve the data for the Data URL. 
 
 The format of the hook is the abi encoded bytes (Ethereum calldata) of the function:
 
 ```
-function hook(bytes32 node, string calldata key, address resolver, uint256 coinType) public returns (string memory)
+function hook(
+    string calldata ens-resolver-function,
+    bytes resover-address-including-chain-id
+) 
 ```
 
-- `node` – the node of the ENS name
-
-- `key` – a string comprising: 
+Example for Vitalik.eth
 
 ```
-"" + <Reverse ENS Name> + ":dataURL"
+function hook(
+    "data(0xee6c4522aab0003e8d14cd40a6af439055fd2577951148c14b6cea9a53475835, 'data-url:vitalik.eth')",
+    0x00010000010114a94391031FE20F77D63af0B4F817Dc4592b86BA8
+) 
 ```
-e.g. "eth.vitalik:dataURL"
 
-- `resolver` – the address of the smart contract (resolver) where the data can be resolved
-- `coinType` – the coinType (ENSIP-11) of the chain, which also includes EVM chain ids. 
+- `0xee6c4...` is the `namehash` of 'vitalik.eth' the `node` of the ENS name
 
-Format: `uvarint(codec2) + <ABI encoded 'hook' function call as bytes>`
+- `'data-url:vitalik.eth'` is the `key`, a string comprising: 
+
+```
+"data-url:" + <ENS Name>
+```
+
+- `resover-address-including-chain-id` – the ERC-7930 binary address of the smart contract (resolver) where the data can be resolved
+
+Format: `uvarint(codec2) + <ABI encoded 'hook' function calldata as bytes>`
 
 ## Web Gateway Resolution (e.g. eth.limo)
 
@@ -82,11 +92,7 @@ When resolving Data URLs, the URL of the request to the gateway is only used to 
 
 # Rationale 
 
-[ENSIP-7](https://github.com/ensdomains/ensips/blob/master/ensips/7.md) makes it possible to resolve contenthash records, allowing decentralized websites using decentralized storage such as IPFS and Swarm to be resolved using ENS names. Many users, however, would prefer to simply redirect their ENS name to a URI. It is currently possible to include a URI in the text record 'url'; however, this has traditionally been used as a profile record to link to a website of the user, for example, a blog or homepage. This ENSIP makes it possible to redirect the ENS name to a URI using the contenthash field, intended for resolving within the web browser. With the addition of the Data URL contenthash type, it is possible to resolve a decentralized website that is fully onchain, avoiding the need for pinning data, for example, using IPFS.
-
-An ENSIP was previously proposed by NameSys on the ENS DAO forum, [[Draft] ENSIP-17: DataURI Format in Contenthash](https://discuss.ens.domains/t/draft-ensip-17-datauri-format-in-contenthash/18048/7). Several methods for encoding that Data URL were discussed, including bypassing the multicodec and using the IPFS multicodec format among other methods. Adding two new protoCodes was also discussed, and this ENSIP takes that approach to avoid overloading the top-level IPFS codec with other subtypes that aren’t necessarily related to IPFS. Previously, a new data-url protoCode was proposed; however, it became necessary to separate the data URL contenthash and the onchain data, and this ENSIP takes the approach of using an Ethereum calldata protoCode with a special hook to resolve data URIs.
-
-
+[ENSIP-7](/7.md) makes it possible to resolve contenthash records, allowing decentralized websites using decentralized storage such as IPFS and Swarm to be resolved using ENS names. Many users, however, would prefer to simply redirect their ENS name to a URI. It is currently possible to include a URI in the text record 'url'; however, this has traditionally been used as a profile record to link to a website of the user, for example, a blog or homepage. This ENSIP makes it possible to redirect the ENS name to a URI using the contenthash field, intended for resolving within the web browser. With the addition of the Data URL contenthash type, it is possible to resolve a decentralized website that is fully onchain, avoiding the need for pinning data, for example, using IPFS.
 
 # Security Considerations
 
