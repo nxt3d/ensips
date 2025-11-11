@@ -1,6 +1,6 @@
 ---
-title: Data URL and URI Contenthash
-description: Extends the contenthash field to support data URL and URI content types
+title: Data URL Contenthash
+description: Extends the contenthash field to support data URL content type using hooks
 contributors: 
     - premm.eth
     - raffy.eth
@@ -12,11 +12,11 @@ ensip:
 
 # Abstract 
 
-This ENSIP extends the `contenthash` field to support two additional content types: data URL and URI.
+This ENSIP extends the `contenthash` field to support data URL content type, allowing content like webapps, images, and videos to be stored onchain.
 
 # Motivation
 
-The `contenthash` field has become the standard for using ENS names for decentralized websites and dapps. With ENSIP-10 and CCIP-Read (EIP-3668), resolving ENS records from L2s reduces the cost of using the `contenthash` field. This makes adopting the [data URL](https://datatracker.ietf.org/doc/html/rfc2397) standard feasible, allowing content like webapps, images, and videos to be stored onchain. This ENSIP also introduces a new URI content type for the `contenthash` field, allowing browsers to redirect to a standard URI when loading an ENS name. While URIs, such as ethereum.org, are not decentralized or onchain, it makes ENS names more reverse compatible with Web2 and is a convenience for users. 
+The `contenthash` field has become the standard for using ENS names for decentralized websites and dapps. With ENSIP-10 and CCIP-Read (EIP-3668), resolving ENS records from L2s reduces the cost of using the `contenthash` field. This makes adopting the [data URL](https://datatracker.ietf.org/doc/html/rfc2397) standard feasible, allowing content like webapps, images, and videos to be stored onchain. This ENSIP introduces a new data URL content type for the `contenthash` field, enabling fully onchain websites without the need for pinning data, for example, using IPFS. 
 
 # Specification
 
@@ -28,20 +28,13 @@ The `contenthash` field has become the standard for using ENS names for decentra
 
 protoCodes and their meanings are specified in the [multiformats/multicodec](https://github.com/multiformats/multicodec) repository.
 
-This ENSIP introduces two new types of multicodecs, uri and eth-calldata (which will be used for referencing the location of the Data URL using Hooks).  
+This ENSIP introduces a new multicodec, eth-calldata, which will be used for referencing the location of the Data URL using Hooks.
 
 Until final protoCodes are approved the "Private Use Area" temporary codes should be used.
 
-uri: 0x3000f2
-
 eth-calldata: 0x30009b
 
-## New Formats 
-**URI**
-
-Format: `uvarint(codec1) + <URI as utf8 bytes>`
-
-**Data URL**
+## Format
 
 For Data URLs, we use ENSIP-XX Hooks to direct clients to a smart contract with a specified contract address and coinType (chain id), using ERC-7930 binary addresses, to resolve the data for the Data URL. 
 
@@ -76,16 +69,6 @@ function hook(
 Format: `uvarint(codec2) + <ABI encoded 'hook' function calldata as bytes>`
 
 ## Web Gateway Resolution (e.g. eth.limo)
-
-**URI:** 
-
-* The HTTP response MUST be a `307` Temporary Redirect.
-	
-* The response `Location` MUST be `$URI` e.g. https://domain.com/a/b.c?d=e.
-
-A reasonable limit may be placed by clients on the number of characters in the URI, but at least 256 bytes of UTF-8 characters should be supported. 
-
-**Data URL:**
 
 * The HTTP response MUST be a `200` OK.
 
@@ -156,11 +139,13 @@ On subsequent requests:
 
 # Rationale 
 
-[ENSIP-7](/7.md) makes it possible to resolve contenthash records, allowing decentralized websites using decentralized storage such as IPFS and Swarm to be resolved using ENS names. Many users, however, would prefer to simply redirect their ENS name to a URI. It is currently possible to include a URI in the text record 'url'; however, this has traditionally been used as a profile record to link to a website of the user, for example, a blog or homepage. This ENSIP makes it possible to redirect the ENS name to a URI using the contenthash field, intended for resolving within the web browser. With the addition of the Data URL contenthash type, it is possible to resolve a decentralized website that is fully onchain, avoiding the need for pinning data, for example, using IPFS.
+[ENSIP-7](/7.md) makes it possible to resolve contenthash records, allowing decentralized websites using decentralized storage such as IPFS and Swarm to be resolved using ENS names. With the addition of the Data URL contenthash type, it is possible to resolve a decentralized website that is fully onchain, avoiding the need for pinning data, for example, using IPFS.
+
+An ENSIP was previously proposed by NameSys on the ENS DAO forum, [[Draft] ENSIP-17: DataURI Format in Contenthash](https://discuss.ens.domains/t/draft-ensip-17-datauri-format-in-contenthash/18048/7). Several methods for encoding that Data URL were discussed, including bypassing the multicodec and using the IPFS multicodec format among other methods. Adding a new protoCode was also discussed, and this ENSIP takes that approach to avoid overloading the top-level IPFS codec with other subtypes that aren't necessarily related to IPFS. Previously, a new data-url protoCode was proposed; however, it became necessary to separate the data URL contenthash and the onchain data, and this ENSIP takes the approach of using an Ethereum calldata protoCode with a special hook to resolve data URIs.
 
 # Security Considerations
 
-Data URLs and URIs are intended for use in web browsers or other user-facing clients, so their security considerations are similar to any web application. However, onchain Data URLs can be safer than a traditional DNS website because the content can be stored entirely onchain, preventing attackers from altering or compromising the website.
+Data URLs are intended for use in web browsers or other user-facing clients, so their security considerations are similar to any web application. However, onchain Data URLs can be safer than a traditional DNS website because the content can be stored entirely onchain, preventing attackers from altering or compromising the website.
   
 # Copyright
 
