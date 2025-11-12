@@ -1,6 +1,6 @@
 ---
 title: Agentic Verifiable and Inspectable Data (AVID)
-description: A simple verification protocol for agent workflows using ENS data records
+description: A simple verification protocol for agent workflows using ENS text or data records
 contributors:
   - premm.eth
 ensip:
@@ -12,7 +12,7 @@ ensip:
 
 ## Abstract
 
-This ENSIP defines AVID (Agentic Verifiable and Inspectable Data), a simple verification protocol for agent workflows. Any data blob can declare its source and a hash. A client verifies byte-for-byte integrity by comparing a locally computed hash to a hash stored under an ENS name. The MIME type of the data can also be declared, with `text/plain; charset=utf-8` being the default. 
+This ENSIP defines AVID (Agentic Verifiable and Inspectable Data), a simple verification protocol for agent workflows. Any ENS record (ENSIP-5 text records or ENSIP-24 data records) can have its integrity verified by checking a corresponding hash record. The hash record is created by inserting `-hash` before any colon in the record key, or appending `-hash` if no colon exists (e.g., `agent-context` → `agent-context-hash`, `key-with-param:1` → `key-with-param-hash:1`). A client verifies byte-for-byte integrity by comparing a locally computed hash to the hash stored in the `-hash` record. The hash record MUST use the same record type as the original record. 
 
 ## Motivation
 
@@ -28,11 +28,21 @@ AVID does not define a new transport it use ENS and does not solve authenticity 
 
 The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in RFC 2119 and RFC 8174.
 
+### Record Types
+
+AVID supports both ENSIP-5 text records (`text(node, key)`) and ENSIP-24 data records (`data(node, key)`). Throughout this specification, `text()` is used in examples for clarity, but `data()` works identically. The hash record MUST use the same record type as the original record (text records use `text()` for hashes, data records use `data()` for hashes).
+
 ### Terminology
 
 **Blob.** The exact bytes of a resource as fetched by the client.
 
-**Source.** An ENS name that anchors the authoritative hash. Data MUST be resolved via ENS using the `ensr:` URI scheme as defined in the ENS Record URI Scheme specification.
+**Source.** An ENS name that anchors the authoritative hash. Data MUST be resolved via ENS records (ENSIP-5 text records or ENSIP-24 data records).
+
+**Record key.** Any valid ENS record key (e.g., `agent-context`, `url`, `description`).
+
+**Record type.** Either `text` (ENSIP-5) or `data` (ENSIP-24). The hash record MUST use the same record type as the original record.
+
+**Hash record key.** The record key with `-hash` inserted before any parameter separator (`:`). If the record key contains a colon and parameter (e.g., `key-with-param:1`), the hash key becomes `key-with-param-hash:1`. If the record key has no parameter (e.g., `agent-context`), the hash key becomes `agent-context-hash`. Examples: `agent-context` → `agent-context-hash`, `key-with-param:1` → `key-with-param-hash:1`, `url` → `url-hash`.
 
 **AVID tag.** A wrapper that declares where to look and optionally the MIME type of the data.
 
@@ -58,32 +68,28 @@ This format allows hash records to be self-describing, eliminating the need to d
 
 ### ENS Storage
 
-The hash and data MUST be stored under the ENS name referenced by the source using ENSIP-24 `data()` records.
+The hash and data MUST be stored under the ENS name referenced by the source. Any ENS record can be verified by checking a corresponding hash record. The hash record key is created by inserting `-hash` before any parameter separator (`:`) in the record key, and the hash record MUST use the same record type as the original record.
 
-When using `ensr:` URIs, the `?data=` parameter MUST include the full key with the `-data` suffix. The hash key is automatically derived by AVID by replacing `-data` with `-hash` in the key.
+* `{key}`: the record containing the actual data (e.g., `agent-context`, `url`, `key-with-param:1`) - accessed via `text(node, "{key}")` or `data(node, "{key}")`
+* `{key-hash}`: the hash record containing the prefixed hash format (method byte + length byte + hash bytes) - accessed via `text(node, "{key-hash}")` or `data(node, "{key-hash}")`
 
-* `{label-data}`: raw bytes of the actual data payload (e.g., `blob-data`, `context-data`)
-* `{label-hash}`: prefixed hash format as defined above (method byte + length byte + hash bytes), derived by replacing `-data` with `-hash` in `{label-data}` (e.g., `blob-hash`, `context-hash`)
+Clients can check if a `-hash` record exists for any record to determine if AVID verification is available. Alternatively, clients may know from protocol specifications which records should have corresponding `-hash` records.
 
-If no `?data=` parameter is specified in the `ensr:` URI, the default key is `"blob-data"`, which results in:
-* `blob-data`: the actual data bytes
-* `blob-hash`: the hash of the data
-
-For example, with key `"context-data"` in the `ensr:` URI:
-* `context-data`: the actual data bytes
-* `context-hash`: the hash of the data (derived by replacing `-data` with `-hash`)
+Examples:
+* `agent-context` → `agent-context-hash` (e.g., `text(node, "agent-context")` → `text(node, "agent-context-hash")`)
+* `key-with-param:1` → `key-with-param-hash:1` (e.g., `text(node, "key-with-param:1")` → `text(node, "key-with-param-hash:1")`)
 
 ### AVID TAGS
 
 AVID MAY be embedded as an HTML/XML tag:
 
 ```
-<AVID SRC="ensr:somedata.data.eth?data=data-blob-data" MIMETYPE="text/plain; charset=utf-8" />
+<AVID SRC="ensr:example.eth?text=agent-context" MIMETYPE="text/plain; charset=utf-8" />
 ```
 
-The `SRC` attribute MUST contain an `ensr:` URI. The `MIMETYPE` attribute is OPTIONAL and specifies the MIME type of the data (default: `text/plain; charset=utf-8`).
+The `SRC` attribute MUST contain an `ensr:` URI with either a `?text=` parameter (for text records) or a `?data=` parameter (for data records) specifying the record key. The `MIMETYPE` attribute is OPTIONAL and specifies the MIME type of the data (default: `text/plain; charset=utf-8`).
 
-Clients MUST resolve data using the `ensr:` URI from `SRC` to fetch the blob bytes from ENS via `data(node, "{label-data}")` where `{label-data}` is the full key including `-data` suffix, extract bytes exactly as received, derive the hash key by replacing `-data` with `-hash`, read the hash record from `data(node, "{label-hash}")` to determine the algorithm, compute the digest using that algorithm, and compare.
+Clients MUST resolve data using the `ensr:` URI from `SRC`: fetch the record bytes from ENS via `text(node, "{key}")` or `data(node, "{key}")` where `{key}` is the record key, extract bytes exactly as received, derive the hash key by inserting `-hash` before any colon in the record key (or appending `-hash` if no colon is present), read the hash record using the same record type to determine the algorithm, compute the digest using that algorithm, and compare.
 
 ### AVID in STRUCTURED DATA
 
@@ -93,55 +99,46 @@ AVID metadata MAY be represented as a JSON object:
 {
   "type": "static-resource",
   "avid": {
-    "source": "ensr:somedata.data.eth?data=data-blob-data",
+    "source": "ensr:example.eth?text=agent-context",
     "mimeType": "text/plain; charset=utf-8"
   }
 }
 ```
 
 The `avid` field MUST be an object containing:
-* `source` (REQUIRED): An `ensr:` URI specifying the data location
+* `source` (REQUIRED): An `ensr:` URI with either a `?text=` parameter (for text records) or a `?data=` parameter (for data records) specifying the record key
 * `mimeType` (OPTIONAL): The MIME type of the data (default: `text/plain; charset=utf-8`)
 
-Verification steps are identical. Extract the `ensr:` URI from the `avid.source` field, resolve data via that URI (which reads `data(node, "{label-data}")` where `node` is the namehash of the full ENS name (e.g. "somedata.data.eth") and `{label-data}` includes the `-data` suffix), derive the hash key by replacing `-data` with `-hash`, read the hash record from `data(node, "{label-hash}")` to determine the algorithm, fetch bytes from ENS, hash using the determined algorithm, and compare.
+Verification steps are identical: extract the `ensr:` URI from the `avid.source` field, determine the record type from the URI parameter, resolve data via that URI, derive the hash key by inserting `-hash` before any colon (or appending if no colon), read the hash record using the same record type, determine the algorithm, compute the digest, and compare.
 
 ### ENSR URI Scheme
 
-The `ensr:` URI scheme as defined in the ENS Record URI Scheme specification has context-specific default behavior when no query parameters are provided. For AVID, the default behavior is explicitly defined: when an `ensr:` URI is provided without a `?data=` parameter, clients MUST resolve the `data(node, "blob-data")` record, where `node` is the namehash of the ENS name. This ensures deterministic behavior for AVID verification regardless of context.
+The `ensr:` URI scheme as defined in the ENS Record URI Scheme specification is used to reference ENS records. When using `ensr:` URIs with AVID, either the `?text=` parameter (for text records) or the `?data=` parameter (for data records) MUST specify the record key. The hash key is derived by inserting `-hash` before any colon (`:`) in the record key (or appending `-hash` if no colon is present), and the hash record MUST use the same record type as the original record.
 
-When using `ensr:` URIs with AVID, the `?data=` parameter MUST include the full key with the `-data` suffix. The hash key is derived by replacing `-data` with `-hash` in the key.
-
-For example:
-* `ensr:docs.data.eth` (no query) → resolves to `data(node, "blob-data")`, hash at `data(node, "blob-hash")`
-* `ensr:docs.data.eth?data=context-data` → resolves to `data(node, "context-data")`, hash at `data(node, "context-hash")`
+Examples:
+* `ensr:example.eth?text=agent-context` → resolves to `text(node, "agent-context")`, hash at `text(node, "agent-context-hash")`
+* `ensr:example.eth?text=key-with-param:1` → resolves to `text(node, "key-with-param:1")`, hash at `text(node, "key-with-param-hash:1")`
 
 ### Verification Flow
 
 Clients MUST follow these steps for verification:
 
-1. Parse the source `ensr:` URI to extract the ENS name and data key. The data key in the `?data=` parameter MUST include the `-data` suffix (e.g., `blob-data`, `context-data`). If no `?data=` parameter is provided, use `"blob-data"` as the default key.
-2. Derive the hash key by replacing `-data` with `-hash` in the data key (e.g., `blob-data` → `blob-hash`, `context-data` → `context-hash`).
-3. Resolve `SRC` ENS name.
-4. Resolve data using the `ensr:` URI from the source. This retrieves the raw bytes from the ENS name's `data(node, "{label-data}")` record, where `node` is the namehash of the ENS name and `{label-data}` is the full key including `-data` suffix. The data is now available for use.
-5. Fetch the blob bytes from the resolved ENS data.
-6. Read ENSIP-24 `data(node, "{label-hash}")` where `node` is the namehash of the ENS name and `{label-hash}` is the derived hash key.
-7. Parse the hash record to extract the method byte, length byte, and hash bytes.
-8. Determine algorithm from the method byte (e.g., `0x00` = keccak256). If the method is unsupported, reject gracefully.
-9. Compute digest of exact bytes using the algorithm determined from step 8.
-10. If the length from the hash record is greater than 29, reject with an error. Otherwise, compare the computed digest (first N bytes where N = length from hash record) with the hash bytes from the hash record. Match = success, mismatch = fail.
+1. Parse the `ensr:` URI to extract the ENS name, record key, and record type (`?text=` → text record, `?data=` → data record). Derive the hash key by inserting `-hash` before any colon in the record key, or appending `-hash` if no colon exists.
+2. Resolve the ENS name and optionally check if the hash record exists. If it doesn't exist, verification cannot proceed.
+3. Fetch the record data (`text(node, "{key}")`) and the hash record (`text(node, "{key-hash}")`) using the same record type.
+4. Parse the hash record to extract the method byte, length byte, and hash bytes. Determine the algorithm from the method byte (e.g., `0x00` = keccak256). If unsupported or length > 29, reject.
+5. Compute the digest of the exact bytes using the determined algorithm (Hash Format) and compare with the hash bytes from the hash record. Match = success, mismatch = fail.
 
 ## Rationale
 
-AVID provides a minimal, deterministic verification protocol that leverages existing ENS infrastructure. By using ENS data records and the `ensr:` URI scheme, AVID avoids the need for external URLs or complex transport mechanisms. The protocol focuses solely on integrity verification, leaving authenticity to ENS name control.
-
-The use of label-based records (`{label}-data` and `{label}-hash`) allows multiple data blobs to be stored under a single ENS name, enabling efficient organization and discovery. This approach extends the same trust and authenticity of the ENS name to all data records stored under it.
+AVID provides a minimal, deterministic verification protocol that leverages existing ENS infrastructure. By inserting `-hash` before any colon in record keys (or appending if no colon exists), any ENS text record (ENSIP-5) or data record (ENSIP-24) can be verified. Hash records MUST use the same record type as the original record, ensuring consistency. The protocol focuses solely on integrity verification, leaving authenticity to ENS name control.
 
 ## Examples
 
 ### HTML TAG
 
 ```
-<AVID SRC="ensr:docs.data.eth?data=context-data" MIMETYPE="application/json" />
+<AVID SRC="ensr:example.eth?text=agent-context" MIMETYPE="application/json" />
 ```
 
 ### JSON Metadata
@@ -153,15 +150,15 @@ The use of label-based records (`{label}-data` and `{label}-hash`) allows multip
     "body": "..."
   },
   "avid": {
-    "source": "ensr:docs.data.eth?data=context-data",
+    "source": "ensr:example.eth?text=agent-context",
     "mimeType": "application/json"
   }
 }
 ```
 
-This example uses the `context-data` key in the `ensr:` URI, which means:
-* `context-data` - stores the actual data bytes (read via `data(node, "context-data")`)
-* `context-hash` - stores the hash of that data (read via `data(node, "context-hash")`, derived by replacing `-data` with `-hash`)
+This example uses the `agent-context` record key:
+* `agent-context` - stores the actual record data (read via `text(node, "agent-context")`)
+* `agent-context-hash` - stores the hash of that data (read via `text(node, "agent-context-hash")`, matching the original record type)
 
 ### TypeScript Implementation Example
 
@@ -169,9 +166,18 @@ This example uses the `context-data` key in the `ensr:` URI, which means:
 import { avid } from "avid.js";
 
 async function avidVerify({ source }) {
-  const { ensName, dataKey } = avid.parseSource(source);
-  const bytes = await avid.resolveData(ensName, dataKey);
-  const hashRecord = await avid.getHashRecord(ensName, dataKey);
+  const { ensName, recordKey, recordType } = avid.parseSource(source);
+  const hashKey = `${recordKey}-hash`;
+  // Optionally check if hash record exists
+  const hashExists = await avid.checkHashRecord(ensName, hashKey, recordType);
+  if (!hashExists) {
+    // Handle case where hash record doesn't exist
+    return false;
+  }
+  const bytes = recordType === 'text' 
+    ? await avid.resolveTextRecord(ensName, recordKey)
+    : await avid.resolveDataRecord(ensName, recordKey);
+  const hashRecord = await avid.getHashRecord(ensName, hashKey, recordType);
   return avid.verifyHash(bytes, hashRecord);
 }
 ```
@@ -182,7 +188,7 @@ This ENSIP introduces a new verification protocol and does not affect existing E
 
 ## Security Considerations
 
-AVID ensures integrity, not origin. Authenticity depends on control of the ENS name. While ENS does not guarantee the trustworthiness of data, it allows full inspection, which can include ERC-3668 offchain data and onchain verifications. Data resolution occurs via ENS using the `ensr:` URI scheme, ensuring data is anchored to the ENS name.
+AVID ensures integrity, not origin. Authenticity depends on control of the ENS name. While ENS does not guarantee the trustworthiness of data, it allows full inspection, which can include ERC-3668 offchain data and onchain verifications. Data resolution occurs via ENS records using the `ensr:` URI scheme, ensuring data is anchored to the ENS name.
 
 ## Copyright
 
@@ -192,5 +198,6 @@ Copyright and related rights waived via [CC0](https://creativecommons.org/public
 
 * RFC 2119: Key words for use in RFCs to Indicate Requirement Levels
 * RFC 8174: Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words
+* ENSIP-5: Text Records
 * ENSIP-24: Arbitrary Data Resolution
 * ENS Record URI Scheme (ensr:)
