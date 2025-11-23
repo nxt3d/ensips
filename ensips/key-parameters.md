@@ -58,7 +58,7 @@ This approach allows clients to deterministically query external data sources (s
 
 ## Backwards Compatibility
 
-Unaware clients will simply treat the full key as a string key. Existing behavior is unaffected.
+Existing behavior is unaffected.
 
 ## Copyright
 
