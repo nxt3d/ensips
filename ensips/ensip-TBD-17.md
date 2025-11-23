@@ -1,31 +1,35 @@
 ---
-title: Text Key Parameters
-author: Prem Makeig (premm.eth) <premm@unruggable.com>
-discussions-to: <URL>
-status: Idea
-created: 2025-07-18
+title: Key Parameters
+description: An extension to ENS record keys (text and data) that allows for dynamic or contextual data to be stored and referenced by appending a parameter after a colon
+contributors: 
+    - premm.eth
+ensip:
+  created: "2025-07-18"
+  status: draft
 ---
+
+# ENSIP-XX: Key Parameters
 
 ## Abstract
 
-This ENSIP defines Text Key Parameters, an extension to ENS text record keys that allows for dynamic or contextual data to be stored and referenced by appending a parameter after a colon (`:`). This enables richer, more flexible key-value data for agentic systems, dApps, and other ENS-integrated applications.
+This ENSIP defines Key Parameters, an extension to ENS record keys (both text records via ENSIP-5 and data records via ENSIP-24) that allows for dynamic or contextual data to be stored and referenced by appending a parameter after a colon (`:`). This enables richer, more flexible key-value data for agentic systems, dApps, and other ENS-integrated applications.
 
 ## Motivation
 
-While text record keys in ENS provide a namespace for data storage, many use cases require referencing data that is contextual, such as by timestamp, block number, user ID, or other parameters. Text Key Parameters allow for this flexibility, supporting composable and dynamic data models for both global keys and service keys.
+While record keys in ENS (both text records via ENSIP-5 and data records via ENSIP-24) provide a namespace for data storage, many use cases require referencing data that is contextual, such as by timestamp, block number, user ID, or other parameters. Key Parameters allow for this flexibility, supporting composable and dynamic data models for both global keys and service keys.
 
 ## Specification
 
-Text record keys in ENS can be global keys (strings without dot notation) or follow the reverse dot notation format (e.g., `com.twitter`, `org.telegram`). Text Key Parameters extend these keys by allowing a parameter to be appended after a colon (`:`).
+Record keys in ENS can be global keys (strings without dot notation) or follow the reverse dot notation format (e.g., `com.twitter`, `org.telegram`). Key Parameters extend these keys by allowing a parameter to be appended after a colon (`:`), and apply to both text records (ENSIP-5) and data records (ENSIP-24).
 
 ### Syntax
 
 ```
-{text-key}:{parameter}
+{key}:{parameter}
 ```
 
 Where:
-- `{text-key}` is a text record key as defined in ENSIP-5
+- `{key}` is a record key as defined in ENSIP-5 (for text records) or ENSIP-24 (for data records)
 - `{parameter}` is a contextual value, such as a timestamp, block number, user ID, etc.
 
 ### Examples
@@ -48,13 +52,13 @@ website:https://example.com                                # Global key with URL
 
 ## Rationale
 
-Text Key Parameters enable precise, context-aware data retrieval in ENS. For example, a text record can request the latest or historical ETH price from an oracle by specifying a block number parameter, or a profile can have different avatars for different years:
+Key Parameters enable precise, context-aware data retrieval in ENS. For example, a record can request the latest or historical ETH price from an oracle by specifying a block number parameter, or a profile can have different avatars for different years.
 
-This approach allows clients to deterministically query external data sources (such as oracles) for time-specific or event-specific data, supporting advanced analytics, historical queries, and agentic systems that require verifiable context. Text Key Parameters make ENS a more powerful and flexible data registry for both human and machine consumers.
+This approach allows clients to deterministically query external data sources (such as oracles) for time-specific or event-specific data, supporting advanced analytics, historical queries, and agentic systems that require verifiable context. Key Parameters make ENS a more powerful and flexible data registry for both human and machine consumers.
 
 ## Backwards Compatibility
 
-Unaware clients will simply ignore the parameter and treat the full key as a string. Existing behavior is unaffected.
+Unaware clients will simply treat the full key as a string key. Existing behavior is unaffected.
 
 ## Copyright
 
