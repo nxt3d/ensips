@@ -51,7 +51,7 @@ The `resolver-info` MAY contain the following information:
 
 The following example demonstrates a possible formatting approach using Markdown with embedded JSON:
 
-```markdown
+````markdown
 # Resolver Information
 
 **Version:** 2.1.0  
@@ -79,8 +79,7 @@ The following example demonstrates a possible formatting approach using Markdown
   }
 }
 ```
-```
-
+````
 
 ### Resolver Behavior
 
