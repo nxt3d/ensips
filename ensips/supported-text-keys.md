@@ -145,8 +145,6 @@ This proposal introduces a new optional resolver profile and does not affect exi
 
 ## Security Considerations
 
-### Gas Considerations
-
 None. 
 
 ## Copyright
