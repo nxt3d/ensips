@@ -143,8 +143,6 @@ for (const key of keys) {
 
 This proposal introduces a new optional resolver profile and does not affect existing ENS functionality. Resolvers that do not implement this interface can continue to function normally.
 
-```
-
 ## Security Considerations
 
 ### Gas Considerations
