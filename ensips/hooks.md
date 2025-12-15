@@ -35,13 +35,13 @@ All resolvers MUST implement the `IExtendedResolver` interface specified in ENSI
 
 ### Hook Function
 ```
-function hook(
+function ensHook(
     string calldata ens-resolver-function,
     address resolver-address
 ) 
 ```
 
-The bytes value of the function selector for `hook()` is `0x573ab61d`.
+The bytes value of the function selector for `ensHook()` is `0xe8fa3b83`.
 
 ### Parameters
 
@@ -64,7 +64,7 @@ A hook can either be resolved as the string version of the hook or as the ABI en
 
 The string based hook should be formatted using hex encoding defined in RFC 4648 for binary values such as the `namehash` and Ethereum address, Section 8, including the 0x prefixs and using single quotes around strings parameters. Newlines should not be included, and the `;` at the end of the hook command SHOULD not be included. 
 
-hook("text(0x0f2efb96f8569aa24898732c1135c66ab581fa1ec6fab3af6dc411077b0858ac,'avatar')", 0x14a94391031FE20F77D63af0B4F817Dc4592b86BA8)
+ensHook("text(0x0f2efb96f8569aa24898732c1135c66ab581fa1ec6fab3af6dc411077b0858ac,'avatar')", 0x14a94391031FE20F77D63af0B4F817Dc4592b86BA8)
 
 ### Example: Resolving Credential From Known Credential Resolver
 
@@ -81,7 +81,7 @@ This example demonstrates how a client resolves a `proof-of-person` text record 
 The client reads the hook from `maria.eth`'s text record with key `proof-of-person` and the key parameter `maria.eth`:
 
 ```
-hook(
+ensHook(
     "text(0x3cc095850df077d28e76eff1780be94210150f8133638973c65687be10fc9a83,'proof-of-person:maria.eth')",
     0x14a94391031FE20F77D63af0B4F817Dc4592b86BA8
 )
@@ -118,7 +118,7 @@ The client now has the verified credential value `Pop ID #1236234534` that was r
 
 ## Rationale 
 
-Hooks introduce redirection for resolving ENS records, which allows for resolving ENS records from "known" resolvers. Known resolvers may have security properties which are known, for example a resolver which resolves Proof-of-Personhood ID, or Know-your-Customer credentials. It has been a long felt need to securely resolve these types of records using ENS, and hooks() make it possible to leverage the properties of known smart contracts as resolvers to securely resolve credentials and secure records for ENS profiles. 
+Hooks introduce redirection for resolving ENS records, which allows for resolving ENS records from "known" resolvers. Known resolvers may have security properties which are known, for example a resolver which resolves Proof-of-Personhood ID, or Know-your-Customer credentials. It has been a long felt need to securely resolve these types of records using ENS, and ensHook() makes it possible to leverage the properties of known smart contracts as resolvers to securely resolve credentials and secure records for ENS profiles. 
 
 ## Security Considerations
 
@@ -126,7 +126,7 @@ None.
 
 ## Backwards Compatibility
 
-Hooks are backwards compatible; clients that are not aware of hooks, will simply resolve the hook() record as raw text or raw bytes. 
+Hooks are backwards compatible; clients that are not aware of hooks, will simply resolve the ensHook() record as raw text or raw bytes. 
 
 # Copyright
 
