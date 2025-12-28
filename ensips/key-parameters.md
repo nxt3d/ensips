@@ -1,6 +1,6 @@
 ---
 title: Key Parameters
-description: An extension to ENS record keys (text and data) that allows for dynamic or contextual data to be stored and referenced by appending a parameter after a colon
+description: An extension to ENS record keys (text and data) that allows for dynamic or contextual data to be stored and referenced by appending a parameter after a colon and space, following the TOON format
 contributors: 
     - premm.eth
 ensip:
@@ -12,7 +12,7 @@ ensip:
 
 ## Abstract
 
-This ENSIP defines Key Parameters, an extension to ENS record keys (both text records via ENSIP-5 and data records via ENSIP-24) that allows for dynamic or contextual data to be stored and referenced by appending a parameter after a colon (`:`). This enables richer, more flexible key-value data for agentic systems, dApps, and other ENS-integrated applications.
+This ENSIP defines Key Parameters, an extension to ENS record keys (both text records via ENSIP-5 and data records via ENSIP-24) that allows for dynamic or contextual data to be stored and referenced by appending a parameter after a colon followed by a space (`: `), following the TOON (Token-Oriented Object Notation) format. This enables richer, more flexible key-value data for agentic systems, dApps, and other ENS-integrated applications.
 
 ## Motivation
 
@@ -20,34 +20,37 @@ While record keys in ENS (both text records via ENSIP-5 and data records via ENS
 
 ## Specification
 
-Record keys in ENS can be global keys (strings without dot notation) or follow the reverse dot notation format (e.g., `com.twitter`, `org.telegram`). Key Parameters extend these keys by allowing a parameter to be appended after a colon (`:`), and apply to both text records (ENSIP-5) and data records (ENSIP-24).
+Record keys in ENS can be global keys (strings without dot notation) or follow the reverse dot notation format (e.g., `com.twitter`, `org.telegram`). Key Parameters extend these keys by allowing a parameter to be appended after a colon followed by a space (`: `), and apply to both text records (ENSIP-5) and data records (ENSIP-24).
+
+This specification adopts the [TOON (Token-Oriented Object Notation)](https://github.com/toon-format/toon) format convention, which requires a space after the colon. This format, developed by Johann Schopplich and introduced in 2024, provides better compatibility with URLs and other values that contain colons without spaces, while maintaining clarity and consistency.
 
 ### Syntax
 
 ```
-{key}:{parameter}
+{key}: {parameter}
 ```
 
 Where:
 - `{key}` is a record key as defined in ENSIP-5 (for text records) or ENSIP-24 (for data records)
+- `: ` (colon followed by a space) separates the key from the parameter, following the TOON format convention
 - `{parameter}` is a contextual value, such as a timestamp, block number, user ID, etc.
 
 ### Examples
 
 ```
-com.chainlink.ether.price:20250718      # Service key with date parameter
-com.chainlink.ether.price:block:20000000 # Service key with block parameter
-com.example.users:alice               # Service key with user parameter
-com.example.groups:public:2025        # Service key with year parameter
-avatar:2025                           # Global key with year parameter
-bio:en                                # Global key with language parameter
+com.chainlink.ether.price: 20250718      # Service key with date parameter
+com.chainlink.ether.price:block: 20000000 # Service key with block parameter
+com.example.users: alice               # Service key with user parameter
+com.example.groups:public: 2025        # Service key with year parameter
+avatar: 2025                           # Global key with year parameter
+bio: en                                # Global key with language parameter
 ```
 
-Parameters are arbitrary UTF-8 string, and may include any number of special characters, for example full URLs are possible. 
+Parameters are arbitrary UTF-8 string, and may include any number of special characters, for example full URLs are possible. The space after the colon ensures that URLs containing colons (such as `https://`) can be stored unambiguously.
 
 ```
-org.neo.uri:https://neo.org/api/v1/resource?foo=bar&baz=qux  # Service key with URL parameter
-website:https://example.com                                # Global key with URL parameter
+org.neo.uri: https://neo.org/api/v1/resource?foo=bar&baz=qux  # Service key with URL parameter
+website: https://example.com                                # Global key with URL parameter
 ```
 
 ## Rationale
