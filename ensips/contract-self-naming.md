@@ -50,7 +50,7 @@ contract MyContract {
 
     /// @custom:storage-location erc8042:eth.ens.reverse-name
     struct ReverseNameStorage {
-        bytes32 reverseNameHash;
+        bytes32 reverseNamehash;
     }
 
     function getStorage() internal pure returns (ReverseNameStorage storage s) {
@@ -63,14 +63,14 @@ contract MyContract {
     constructor() {
         // Declare the contract's reverse name using ERC-8042 Diamond Storage
         // `namehash(...)` refers to the ENS Namehash algorithm.
-        getStorage().reverseNameHash = namehash("mycontract.eth");
+        getStorage().reverseNamehash = namehash("mycontract.eth");
     }
 }
 ```
 
 ## Rationale
 
-Using ERC-8042 Diamond Storage provides a simple, standardized method for contracts to declare their ENS names through predictable storage locations that enable trustless verification. This approach eliminates deployment friction by allowing contracts to self-declare their identity during initialization without requiring separate registration transactions. The permissionless registration model allows any account to complete the registration process, making it ideal for admin-free contracts while maintaining security through cryptographic verification. By storing the namehash directly in a single slot, this approach is more gas-efficient and simpler to implement than metadata mapping approaches.
+Using ERC-8042 Diamond Storage provides a simple, standardized method for contracts to declare their ENS names through predictable storage locations that enable trustless verification. This approach eliminates deployment friction by allowing contracts to self-declare their identity during initialization without requiring separate registration transactions. The permissionless registration model allows any account to complete the registration process, making it ideal for admin-free contracts while maintaining security through cryptographic verification. By storing the namehash directly in a single slot, this approach is more gas-efficient and simpler to implement than storing the plain string in the contract. 
 
 ## Security Considerations
 
