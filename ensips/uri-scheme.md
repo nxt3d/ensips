@@ -6,7 +6,7 @@ status: Idea
 created: 2025-08-18
 ---
 
-# ENSIP-X: Arbitrary Data Resolution
+# ENSIP-X: ENS Record URI Scheme
 
 ## Abstract
 
