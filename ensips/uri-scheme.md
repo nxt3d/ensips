@@ -6,6 +6,8 @@ status: Idea
 created: 2025-08-18
 ---
 
+# ENSIP-X: Arbitrary Data Resolution
+
 ## Abstract
 
 This ENSIP defines the `ensr:` URI scheme for addressing ENS records. It enables portable, unambiguous references to ENS records, including text records, addresses by coin type, contenthash, and arbitrary data records.
@@ -47,14 +49,14 @@ addr-param = "addr" [ "=" coin-type ]
 coin-type = 1*DIGIT ; ENSIP-11 coin type (e.g., 60 for ETH)
 
 text-param = "text=" text-key
-text-key = 1*( unreserved / pct-encoded / ":" )
-; ":" allowed for key parameters
+text-key = 1*( unreserved / pct-encoded / ":" / "[" / "]" / %x2F )
+; ":", "[", "]", "/" allowed for key parameters (ERC-8119)
 
 content-param = "contenthash"
 
 data-param = "data=" data-key
-data-key = 1*( unreserved / pct-encoded / ":" )
-; ":" allowed for key parameters (see related ENSIP)
+data-key = 1*( unreserved / pct-encoded / ":" / "[" / "]" / %x2F )
+; ":", "[", "]", "/" allowed for key parameters (ERC-8119)
 
 param = param-key "=" param-val
 param-key = 1*( unreserved )
@@ -89,6 +91,7 @@ No additional envelope or metadata is included at the URI resolution layer. Meta
 ensr:neo.eth?text=eth.delegations:ens
 ensr:neo.eth?text=com.twitter
 ensr:neo.eth?text=agent-context
+ensr:neo.eth?text=agent-registration[0x000100000101148004a169fb4a3325136eb29fa0ceb6d2e539a432][167] ; agent verification (ENSIP-25)
 
 ensr:neo.eth?addr ; returns coin type 60 (ETH)
 ensr:neo.eth?addr=60 ; ETH explicitly
@@ -97,7 +100,6 @@ ensr:neo.eth?addr=0 ; BTC
 ensr:neo.eth?contenthash ; explicit website/content pointer
 
 ensr:neo.eth?data=ai-context ; arbitrary data record
-ensr:neo.eth?data=agent-registry:000100000100 ; agent registry
 
 ensr:docs.eth ; context-specific default (not deterministic)
 ```
@@ -122,6 +124,7 @@ This revision restricts labels to ASCII. Internationalized labels, including emo
 
 * RFC 3986: Uniform Resource Identifier (URI): Generic Syntax
 * RFC 5234: Augmented BNF for Syntax Specifications
+* ERC-8119: Key Parameters
 * ENSIP-11: Coin Type Definitions for ENS Address Resolution
 * ENSIP-7: Contenthash for ENS
 * ENSIP-24: Arbitrary Data Resolution
