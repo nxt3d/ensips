@@ -52,7 +52,7 @@ The package manifest object MUST include:
 
 - `name`: the package name.
 - `version`: the package version.
-- `dist`: an object describing where to fetch the package contents.
+- `dist`: an object describing where to fetch the package contents, or a non-empty array of such objects describing fallback sources.
 
 The package manifest object MAY include standard package metadata fields such as:
 
@@ -76,20 +76,25 @@ Package-relative paths MUST NOT be absolute paths, URLs, or contain `..` path se
 
 ### Distribution
 
-The `dist` object describes the package artifact or package root. It is based on package registry metadata such as npm's `dist` object, extended to support URLs, IPFS, `data:` URLs, and other URI schemes.
+The `dist` value describes the package artifact or package root. It is based on package registry metadata such as npm's `dist` object, extended to support URLs, IPFS, `data:` URLs, other URI schemes, and ordered fallback sources.
 
-The `dist` object MUST include exactly one of:
+`dist` MUST be either:
+
+- a single distribution object, or
+- a non-empty array of distribution objects, listed in order of client preference.
+
+Each distribution object MUST include exactly one of:
 
 - `tarball`: a URI resolving to an archive containing the package contents.
 - `directory`: a URI resolving to a package root directory.
 
-The URI MAY use `https:`, `ipfs:`, `data:`, or another URI scheme supported by the client. For example, `dist.tarball` MAY be an HTTPS URL, an IPFS URI, or a `data:` URL containing an archive.
+The URI MAY use `https:`, `ipfs:`, `data:`, or another URI scheme supported by the client. For example, `tarball` MAY be an HTTPS URL, an IPFS URI, or a `data:` URL containing an archive.
 
-If `dist.tarball` is used, clients fetch the archive and extract package files from it.
+If `tarball` is used, clients fetch the archive and extract package files from it.
 
-If `dist.directory` is used, clients resolve package-relative paths from the directory root. This is useful for IPFS directory CIDs.
+If `directory` is used, clients resolve package-relative paths from the directory root. This is useful for IPFS directory CIDs.
 
-Examples:
+Examples of a single source:
 
 ```json
 { "dist": { "tarball": "https://example.com/file-pkg-0.1.0.tgz" } }
@@ -103,11 +108,24 @@ Examples:
 { "dist": { "directory": "ipfs://bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi" } }
 ```
 
-For non-content-addressed distribution sources, such as `https:` tarballs, the `dist` object MUST include:
+Example of fallback sources:
+
+```json
+{
+  "dist": [
+    { "tarball": "https://example.com/file-pkg-0.1.0.tgz", "integrity": "sha512-..." },
+    { "tarball": "ipfs://bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi" }
+  ]
+}
+```
+
+When `dist` is an array, all entries MUST resolve to the same package contents. Clients try entries in order; the first entry that successfully resolves and verifies is used, and remaining entries are ignored. A successful resolution means the source was fetched and any required integrity check passed.
+
+For non-content-addressed distribution sources, such as `https:` tarballs, each distribution object MUST include:
 
 - `integrity`: a Subresource Integrity string for the package artifact or directory root, when one can be represented.
 
-For content-addressed distribution sources, such as `ipfs:` URIs, `dist.integrity` is OPTIONAL because the URI already identifies the expected content. Clients MUST verify `dist.integrity` when it is present. Clients SHOULD also verify content-addressed sources according to their URI scheme, such as verifying IPFS content against its CID when supported.
+For content-addressed distribution sources, such as `ipfs:` URIs, `integrity` is OPTIONAL because the URI already identifies the expected content. Clients MUST verify `integrity` when it is present. Clients SHOULD also verify content-addressed sources according to their URI scheme, such as verifying IPFS content against its CID when supported.
 
 ### Signatures
 
@@ -143,10 +161,15 @@ Signatures attest to the manifest metadata. They do not replace `dist.integrity`
       "file-pkg": "./bin/example",
       "helper": "./bin/helper"
     },
-    "dist": {
-      "tarball": "https://example.com/file-pkg-0.1.0.tgz",
-      "integrity": "sha512-..."
-    }
+    "dist": [
+      {
+        "tarball": "https://example.com/file-pkg-0.1.0.tgz",
+        "integrity": "sha512-..."
+      },
+      {
+        "tarball": "ipfs://bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi"
+      }
+    ]
   },
   "signatures": [
     {
@@ -181,8 +204,8 @@ A client resolving a package SHOULD:
 1. Resolve the ENS name's `contenthash`
 2. Fetch the JSON manifest
 3. Read the package metadata from `manifest` and verify signatures when present according to client policy
-4. Fetch the package contents from `dist.tarball` or `dist.directory`
-5. Verify `dist.integrity` when present and verify content addressed sources when supported
+4. Fetch the package contents from `dist`. If `dist` is an array, try entries in order and use the first that successfully resolves and verifies.
+5. Verify `integrity` when present on the selected entry and verify content-addressed sources when supported.
 6. Select the requested file or executable from `files` or `bin`
 
 ## Rationale
