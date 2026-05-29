@@ -1,6 +1,6 @@
 ---
 title: ENS Package Manifest
-description: An HTML package manifest format for ENS names, listing downloadable files.
+description: A JSON package manifest format for ENS names, listing downloadable files.
 contributors:
   - premm.eth
 ensip:
@@ -8,15 +8,14 @@ ensip:
   status: draft
 ---
 
-# ENSIP-X: ENS Package Manifest
+# ENSIP-XX: ENS Package Manifest
 
 ## Abstract
 
-An ENS name can publish a package manifest describing downloadable files. The manifest is retrieved via the name's `contenthash` record (ENSIP-7) and is represented as a simple HTML document.
+This ENSIP defines a JSON package manifest for ENS names using familiar package metadata fields. An ENS name points to the manifest with its `contenthash` record, and the manifest tells clients the package name, version, files, executable commands, and where to fetch the package contents.
 
-Files are represented as links. File sources may be standard URIs, `data:` URLs, or [ERC-8121](https://eips.ethereum.org/EIPS/eip-8121) hooks returning raw bytes.
+This lets an ENS name act as a package identifier. A client can resolve the name, fetch the manifest, download the package from a URL, IPFS, a `data:` URL, or another supported URI scheme, verify it, and optionally run an executable defined by the package.
 
-The document may optionally include a machine-readable JSON manifest embedded inside a `<pre id="pkg-manifest">` element.
 
 ## Motivation
 
@@ -25,13 +24,11 @@ ENS names can identify software packages, tools, or services.
 A client resolving a name such as `file-pkg.eth` can:
 
 1. Resolve the name's `contenthash`
-2. Fetch the package manifest
-3. Retrieve files
-4. Verify hashes
+2. Fetch the JSON manifest
+3. Fetch the package contents
+4. Verify integrity
 
-Using HTML keeps the format simple, readable, and compatible with existing web tooling.
-
-ERC-7930 addresses provide a canonical identifier for publishers and hook targets.
+A plain JSON document keeps the format simple and easy to consume from any tooling, including HTML interfaces that load the manifest via JavaScript for example. Reusing package metadata conventions keeps ENS packages familiar to package managers such as npm, yarn, and bun while allowing package contents to be addressed by ENS and IPFS.
 
 ## Specification
 
@@ -41,243 +38,156 @@ The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "S
 
 The package manifest MUST be published at the resource referenced by the ENS name's `contenthash` record.
 
-The manifest MUST be an HTML document.
+The manifest MUST be a JSON document containing a top-level `manifest` object. Servers SHOULD use the MIME type `application/ens-pkg+json`, or `application/json` when a more specific type is not configurable.
 
 The `contenthash` record MAY reference any content system supported by ENS, including IPFS (per ENSIP-7).
 
-### File Entries
+### Manifest Fields
 
-Package files are represented as HTML elements with file metadata attributes. URI sources use anchor elements (`<a href="...">`); hook sources use a non-link element such as `<span>`.
+The package manifest object follows package metadata conventions where possible.
 
-Each file entry MUST include:
+The fields in this section apply to the top-level `manifest` object.
 
-- File path
-- File hash
-- Hash algorithm
+The package manifest object MUST include:
 
-File entries MAY include a `type` attribute with the MIME type of the file content (e.g. `application/octet-stream`, `application/json`, `text/plain`). This helps clients interpret the file, especially when the source is a hook returning raw bytes.
+- `name`: the package name.
+- `version`: the package version.
+- `dist`: an object describing where to fetch the package contents.
 
-Machine-readable metadata MUST be provided using attributes.
+The package manifest object MAY include standard package metadata fields such as:
 
-Example (URI with optional source indicator; only the path is linked):
+- `author`
+- `contributors`
+- `description`
+- `license`
+- `repository`
+- `dependencies`
+- `devDependencies`
+- `scripts`
 
-```html
-ipfs: <a
-  href="ipfs://bafy..."
-  type="application/octet-stream"
-  data-path="bin/example"
-  data-hash-algorithm="keccak256"
-  data-hash="0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
->
-  bin/example
-</a>
-<small title="0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa">
-  keccak256: 0xaaaa...aaaa
-</small>
+The package manifest object MAY include:
+
+- `files`: an array of package-relative paths included in the package. This follows the same general meaning as the `files` field in `package.json`.
+- `bin`: a string or object defining executable commands. This follows the same general meaning as the `bin` field in `package.json`.
+
+If `bin` is an object, each key is a command name and each value is a package-relative path to an executable file. If `bin` is a string, it is the package-relative path to the default executable for the package name.
+
+Package-relative paths MUST NOT be absolute paths, URLs, or contain `..` path segments.
+
+### Distribution
+
+The `dist` object describes the package artifact or package root. It is based on package registry metadata such as npm's `dist` object, extended to support URLs, IPFS, `data:` URLs, and other URI schemes.
+
+The `dist` object MUST include exactly one of:
+
+- `tarball`: a URI resolving to an archive containing the package contents.
+- `directory`: a URI resolving to a package root directory.
+
+The URI MAY use `https:`, `ipfs:`, `data:`, or another URI scheme supported by the client. For example, `dist.tarball` MAY be an HTTPS URL, an IPFS URI, or a `data:` URL containing an archive.
+
+If `dist.tarball` is used, clients fetch the archive and extract package files from it.
+
+If `dist.directory` is used, clients resolve package-relative paths from the directory root. This is useful for IPFS directory CIDs.
+
+Examples:
+
+```json
+{ "dist": { "tarball": "https://example.com/file-pkg-0.1.0.tgz" } }
 ```
 
-The visible hash MAY be truncated. Clients MUST use the full hash stored in the attribute.
-
-### URI Sources
-
-If a file source is a URI, the file entry MUST be an anchor (`<a>`) with `href`.
-
-Allowed URI types include:
-
-- `ipfs:`
-- `https:`
-- `data:`
-- Other standard URI schemes
-
-### Hook Sources
-
-If a file source is provided through an [ERC-8121](https://eips.ethereum.org/EIPS/eip-8121) hook, the file entry MUST use a non-link element (e.g. `<span>`) with a `data-hook` attribute. Hooks are resolution specifications, not links.
-
-The hook MUST encode the call parameters, return type, and ERC-7930 address. The function selector is optional per [ERC-8121](https://eips.ethereum.org/EIPS/eip-8121); when included, it acts as a checksum for the function signature.
-
-The element SHOULD include a `type` attribute with the MIME type of the file content (e.g. `application/octet-stream`, `application/json`, `text/plain`). This helps clients interpret the raw bytes returned by the hook.
-
-File entries MAY include a source indicator before the path (e.g. `hook: ` or `ipfs: `) so readers can distinguish resolution method. For URI sources, only the path need be linked.
-
-Example:
-
-```html
-hook: <span
-  data-path="bin/example"
-  type="application/octet-stream"
-  data-hook="hook(0xc41a360a,'getFile(string)','getFile(\'bin/example\')','(bytes)',0x000100...)"
-  data-hash-algorithm="keccak256"
-  data-hash="0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
->
-  bin/example
-</span>
-<small title="0xaaa...">keccak256: 0xaaaa...aaaa</small>
+```json
+{ "dist": { "tarball": "data:application/gzip;base64,H4sI..." } }
 ```
 
-The hook encoding already contains the target address and return type. No additional target field is required.
-
-### Publisher Identifier
-
-If the manifest identifies a publisher or package owner, it SHOULD use an ERC-7930 address.
-
-User interfaces MAY display the ENS primary name associated with that address.
-
-### Optional JSON Manifest
-
-The HTML document MAY include a JSON manifest for machine readability.
-
-If present, the JSON manifest MUST appear inside:
-
-```html
-<pre id="pkg-manifest">
-</pre>
+```json
+{ "dist": { "directory": "ipfs://bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi" } }
 ```
 
-The JSON manifest MAY include a `bin` field. If present:
+For non-content-addressed distribution sources, such as `https:` tarballs, the `dist` object MUST include:
 
-- `bin` MUST be an object mapping unique command names to file paths (e.g. `{ "file-pkg": "bin/example", "helper": "bin/helper" }`).
-- `default` MAY be present: a string that MUST match a key in `bin`. When no name is given, the client uses this bin for download and run. If `default` is omitted and there is exactly one entry in `bin`, clients MAY use that entry.
+- `integrity`: a Subresource Integrity string for the package artifact or directory root, when one can be represented.
 
-Example:
+For content-addressed distribution sources, such as `ipfs:` URIs, `dist.integrity` is OPTIONAL because the URI already identifies the expected content. Clients MUST verify `dist.integrity` when it is present. Clients SHOULD also verify content-addressed sources according to their URI scheme, such as verifying IPFS content against its CID when supported.
 
-```html
-<pre id="pkg-manifest">
+### Signatures
+
+The JSON document MAY include signatures over the `manifest` object.
+
+If present, `signatures` MUST be an array.
+
+Each signature entry MUST include:
+
+- `type`: the signature scheme.
+- `address`: the wallet address that produced the signature.
+- `signature`: the signature bytes encoded as a hex string.
+
+For Ethereum wallet signatures, `type` SHOULD be `eip191`. The signature payload MUST be the canonical JSON serialization of the `manifest` object. Clients that verify signatures MUST recover the signing address and compare it to `address`.
+
+Signatures attest to the manifest metadata. They do not replace `dist.integrity` or content-addressed verification of the package contents.
+
+### Example
+
+```json
 {
-  "spec": "ens-pkg-1",
-  "name": "file-pkg",
-  "version": "0.1.0",
-  "publisher": "0x000100000101141234567890abcdef1234567890abcdef12345678",
-  "bin": {
-    "file-pkg": "bin/example",
-    "helper": "bin/helper"
+  "manifest": {
+    "name": "file-pkg",
+    "version": "0.1.0",
+    "description": "Example package with executable binaries.",
+    "author": "example.eth",
+    "files": [
+      "package.json",
+      "bin/example",
+      "bin/helper"
+    ],
+    "bin": {
+      "file-pkg": "./bin/example",
+      "helper": "./bin/helper"
+    },
+    "dist": {
+      "tarball": "https://example.com/file-pkg-0.1.0.tgz",
+      "integrity": "sha512-..."
+    }
   },
-  "default": "file-pkg"
+  "signatures": [
+    {
+      "type": "eip191",
+      "address": "0x1234567890abcdef1234567890abcdef12345678",
+      "signature": "0x..."
+    }
+  ]
 }
-</pre>
-```
-
-If the JSON manifest is embedded in the HTML, it MUST NOT also appear as a downloadable file link.
-
-### Manifest Hash
-
-If the JSON manifest is present, the HTML document SHOULD include its hash.
-
-Example:
-
-```html
-<p
-  data-manifest-hash-algorithm="keccak256"
-  data-manifest-hash="0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
->
-  manifest hash: keccak256 0xcccc...cccc
-</p>
 ```
 
 ### Download and Run CLI Example
 
-Packages may include executable files. The `bin` field maps unique names to file paths; `default` specifies which bin is downloaded and run when no name is given. Client tooling can support download-and-run workflows.
-
-Complete example manifest:
-
-```html
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>file-pkg</title>
-</head>
-<body>
-  <h1>file-pkg</h1>
-  <p>Example package with executable binaries.</p>
-
-  <h2>Files</h2>
-  <ul>
-    <li>
-      ipfs: <a
-        href="ipfs://bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi"
-        type="application/json"
-        data-path="package.json"
-        data-hash-algorithm="keccak256"
-        data-hash="0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
-      >
-        package.json
-      </a>
-      <small title="0xbbbb...bbbb">keccak256: 0xbbbb...bbbb</small>
-    </li>
-    <li>
-      hook: <span
-        data-path="bin/example"
-        type="application/octet-stream"
-        data-hook="hook(0xc41a360a,'getFile(string)','getFile(\'bin/example\')','(bytes)',0x000100000101141234567890abcdef1234567890abcdef12345678)"
-        data-hash-algorithm="keccak256"
-        data-hash="0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-      >
-        bin/example
-      </span>
-      <small title="0xaaaa...aaaa">keccak256: 0xaaaa...aaaa</small>
-    </li>
-    <li>
-      ipfs: <a
-        href="ipfs://bafybeihblobh2c5fnbidcp4b5tk5v7n2e4eqo5o6f7g8h9i0j1k2l3m4n5o6p7q"
-        type="application/octet-stream"
-        data-path="bin/helper"
-        data-hash-algorithm="keccak256"
-        data-hash="0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
-      >
-        bin/helper
-      </a>
-      <small title="0xdddd...dddd">keccak256: 0xdddd...dddd</small>
-    </li>
-  </ul>
-
-  <h2>Manifest</h2>
-  <pre id="pkg-manifest">{
-  "spec": "ens-pkg-1",
-  "name": "file-pkg",
-  "version": "0.1.0",
-  "publisher": "0x000100000101141234567890abcdef1234567890abcdef12345678",
-  "bin": {
-    "file-pkg": "bin/example",
-    "helper": "bin/helper"
-  },
-  "default": "file-pkg"
-}</pre>
-
-  <p
-    data-manifest-hash-algorithm="keccak256"
-    data-manifest-hash="0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
-  >
-    manifest hash: keccak256 0xcccc...cccc
-  </p>
-</body>
-</html>
-```
-
-Example pseudocode:
+Packages may include executable files. The `bin` field maps command names to executable paths, following package metadata conventions. Client tooling can support download-and-run workflows.
 
 ```
 ensx file-pkg.eth
-# Resolves contenthash, fetches manifest, downloads files, verifies hashes, runs default bin
+# Resolves contenthash, fetches manifest, downloads package, verifies integrity, runs file-pkg
 
 ensx file-pkg.eth helper
 # Name given: downloads and runs bin/helper
 ```
+
+### HTML and Other Interfaces
+
+Clients MAY build HTML or other user interfaces that load the JSON manifest via JavaScript (e.g. `fetch()`) and present its files as links or other elements. Such presentations are out of scope of this specification; the JSON manifest is the source of truth.
 
 ### Client Behavior
 
 A client resolving a package SHOULD:
 
 1. Resolve the ENS name's `contenthash`
-2. Fetch the HTML manifest
-3. If `<pre id="pkg-manifest">` exists, parse it
-4. Otherwise parse file entries from HTML
-5. Fetch files
-6. Verify hashes
+2. Fetch the JSON manifest
+3. Read the package metadata from `manifest` and verify signatures when present according to client policy
+4. Fetch the package contents from `dist.tarball` or `dist.directory`
+5. Verify `dist.integrity` when present and verify content addressed sources when supported
+6. Select the requested file or executable from `files` or `bin`
 
 ## Rationale
 
-Using HTML as the manifest format keeps the specification simple and human-readable. Existing web tooling can serve, cache, and display manifests. The optional JSON manifest enables machine parsing without requiring a separate file. [ERC-8121](https://eips.ethereum.org/EIPS/eip-8121) hooks allow on-chain or hybrid resolution of file contents. ERC-7930 addresses provide chain-agnostic publisher identification.
+A JSON manifest keeps the specification minimal and easy to consume from any tooling. Using familiar fields such as `name`, `version`, `files`, `bin`, and `dist` keeps ENS packages close to existing package manager metadata while allowing package contents to be distributed through ENS-compatible systems such as IPFS. The top-level wrapper allows wallet attestations without changing the package metadata object being signed. Human-facing presentations such as HTML interfaces can load the manifest via JavaScript when needed, without complicating the canonical package definition.
 
 ## Backwards Compatibility
 
@@ -285,7 +195,7 @@ This ENSIP defines a new manifest format consumed by clients. It does not modify
 
 ## Security Considerations
 
-Clients MUST verify hashes before executing files and SHOULD require explicit user approval. External and hook-resolved sources MUST be treated as untrusted until verified.
+Clients MUST verify integrity information before executing files when it is present and SHOULD require explicit user approval before execution. External sources MUST be treated as untrusted until verified. Clients MUST reject package-relative paths that are absolute paths, URLs, or contain `..` path segments before writing files to disk.
 
 ## Copyright
 
