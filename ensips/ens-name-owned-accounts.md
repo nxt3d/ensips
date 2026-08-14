@@ -1,0 +1,84 @@
+---
+title: ENS Name Owned Accounts
+description: A method for an ENS name to list additional accounts per chain as data records
+contributors:
+  - premm.eth
+ensip:
+  created: "2026-08-13"
+  status: draft
+---
+
+# ENSIP-X: ENS Name Owned Accounts
+
+## Abstract
+
+This ENSIP lets an ENS name list more than one account per chain, for example a Safe or a token-bound account. A listing is a claim by the name owner and proves nothing about the account. Verifying the link between a name and a listed account is left to a future ENSIP.
+
+## Motivation
+
+ENS names often represent a user identity, for both human users and AI agents. A user frequently controls more than one account on a chain and wants those accounts associated with a single ENS name. No standard exists for that association today. This ENSIP lets a name declare additional accounts per chain.
+
+## Specification
+
+The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in RFC 2119 and RFC 8174.
+
+### Account Data Records
+
+An ENS name MAY list additional accounts as [ENSIP-24](./24.md) data records on its own node under the reserved key:
+
+```
+account[<chain-id>][<index>]
+```
+
+Where:
+
+- `<chain-id>` is the ERC-7930 Chain Identifier, a lowercase `0x`-prefixed hex string,
+- `<index>` is an unsigned base-10 integer without leading zeros, distinguishing multiple accounts on the same chain.
+
+The value MUST be the Address component of an ERC-7930 Interoperable Address for the chain named by `<chain-id>`. For an EVM chain, this is the 20-byte address.
+
+Indexes MAY be assigned in any order. Clients MAY discover keys through `supportedDataKeys` or `DataChanged` events, both defined in [ENSIP-24](./24.md).
+
+Any account MAY be listed.
+
+### Relation to Address Records
+
+The name's address records under [ENSIP-1](./1.md) and [ENSIP-9](./9.md) continue to resolve its primary accounts. Listed accounts are data records, not address records.
+
+### Meaning of a Listing
+
+A listing is a claim by the name owner and is not verified. Anyone who controls a name can list any address. Clients MUST NOT treat a listing as evidence that the name owner controls the account, that the account consents to the association, or that the account is any particular kind of account.
+
+Clients and explorers MUST NOT display the listing ENS name in place of the account address on the basis of a listing. Clients SHOULD NOT send funds to a listed account. The name's address records remain its payment addresses.
+
+Verifying the link between a name and a listed account is out of scope. A future ENSIP will define a verification system.
+
+### Ethereum Example
+
+The name `agent.example.eth` lists an account on Ethereum mainnet, Chain Identifier `0x00010000010100`, at index 0:
+
+- `data(namehash("agent.example.eth"), "account[0x00010000010100][0]")` returns `0xb8c2C29ee19D8307cb7255e1Cd9CbDE883A267d5`.
+
+## Rationale
+
+Users of ENS names, including AI agents, commonly hold more than one account, and two recent standards make storing those accounts on a name efficient. [ENSIP-24](./24.md) resolves raw bytes from a name, and ERC-7930 encodes a chain and an address in one compact binary format. Together they carry an account listing without introducing any new resolver profile method. ERC-7930 was chosen because it is built to outlast current addressing practice. It names chains beyond EVM and defines an upgrade path for future address formats.
+
+Verification was considered and deferred. The obvious mechanism, setting the account's reverse record to the listing name, was rejected because the reverse record also carries the account's primary name, so an account could not be verifiable and hold its own primary name at the same time. A future ENSIP will define a separate system.
+
+The title says owned because these accounts belong to the name rather than receive payment for it. Proving ownership is out of scope.
+
+## Backwards Compatibility
+
+This ENSIP requires no change to existing resolution standards.
+
+## Security Considerations
+
+A listing is controlled by the name owner alone and can name accounts belonging to others. Clients that present listings SHOULD label them as unverified claims.
+
+If the name is transferred, listings set by the previous owner remain until changed.
+
+A listing carries no payment endorsement. Funds sent to a listed account may be unrecoverable, for example when a contract account does not exist at the same address on another chain.
+
+## Copyright
+
+Copyright and related rights waived via [CC0](https://creativecommons.org/publicdomain/zero/1.0/).
