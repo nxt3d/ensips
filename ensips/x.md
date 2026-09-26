@@ -8,7 +8,7 @@ ensip:
   status: draft
 ---
 
-# ENSIP-X: ENS Cross-Chain Resolution
+# ENSIP-X: ENS Cross-Chain Reverse Resolution
 
 ## Abstract
 
